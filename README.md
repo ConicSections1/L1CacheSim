@@ -1,107 +1,110 @@
 # Cache Simulator
 
-A C++17 L1 cache simulator with parameterized capacity, associativity, and block size. The simulator uses strict LRU replacement per set and reports total accesses, hits, misses, and hit rate.
+A C++17 L1 cache simulator focused on performance modeling, CLI reproducibility, and algorithmic clarity. The simulator supports parameterized cache size, associativity, and block size, and uses strict LRU replacement with $O(1)$ average-time lookups and updates.
 
-## Features
+## Why This Repository Exists
 
-- N-way set-associative cache model
-- LRU replacement implemented with `std::list` and `std::unordered_map`
-- Dynamic bit-width calculation for index and block offset fields
-- Bitwise tag/index extraction from 32-bit addresses
-- Trace-file driven execution
+This project is designed to demonstrate hardware-aware modeling, cache behavior analysis, and data-structure discipline. The implementation is intentionally explicit about the core tradeoff that matters in interview settings: the cache policy is not a linear scan over an array. It is a front-moved LRU list backed by a hash map.
 
-## Repository Layout
+## CLI
 
-- `includes/cache.h` - cache interface and set/LRU definitions
-- `src/cache.cpp` - cache constructor, access logic, and statistics
-- `src/main.cpp` - trace parser and simulator entry point
-- `traces/` - place input trace files here
-- `Makefile` - build recipe for the simulator
-
-## Build
-
-Prerequisites:
-
-- `g++` with C++17 support
-- `make`
-
-Build the simulator from the repository root:
+Build the simulator with:
 
 ```bash
 make
 ```
 
-This produces the executable `simulator` in the repository root.
-
-To remove build outputs:
+Run it with a trace file and optional cache parameters:
 
 ```bash
-make clean
+./simulator <trace_file> [cache_size_bytes] [associativity] [block_size]
 ```
 
-## Run
-
-The program expects a trace file path as its first argument:
+Examples:
 
 ```bash
 ./simulator traces/sample.trace
+./simulator traces/sample.trace 32768 4 64
+./simulator traces/sample.trace 16384 8 64
 ```
 
-On Linux, the Makefile builds `simulator` (not `simulator.exe`).
+On Linux, the Makefile produces `simulator`, not `simulator.exe`.
 
-Each trace line must contain an access type and a hexadecimal 32-bit address:
+Each trace line must contain an operation and a hexadecimal 32-bit address:
 
 ```text
 R 0x1A2B3C4D
 W 0xFFEEDDCC
 ```
 
-- `R` means read
-- `W` means write
-- The address is parsed as base-16 with `std::stoul`
+`R` means read and `W` means write.
 
-## Cache Configuration
+## Performance Model
 
-The current executable uses these defaults in `src/main.cpp`:
-
-- Cache size: 32768 bytes
-- Associativity: 4-way
-- Block size: 64 bytes
-
-From these values, the simulator derives:
+The simulator derives its address fields from the runtime configuration:
 
 - Number of sets = `cacheSize / (associativity * blockSize)`
-- Offset bits = `log2(blockSize)`
+- Block offset bits = `log2(blockSize)`
 - Index bits = `log2(number of sets)`
 - Tag bits = `32 - indexBits - offsetBits`
 
-## Reproducibility Notes
+The cache is implemented with these rules:
 
-The following command sequence reproduces the current build and execution flow from a clean checkout:
+- `std::list` stores the LRU order per set
+- `std::unordered_map` maps tag values to list iterators
+- On a hit, the entry moves to the front of the list
+- On a miss, the new entry is inserted at the front
+- On eviction, the least recently used entry at the back is removed
+
+That gives $O(1)$ average-time lookup and update behavior.
+
+## Build and Reproduce
 
 ```bash
 make clean
 make
-./simulator traces/<your-trace-file>
+./simulator traces/sample.trace
 ```
 
-The simulator prints:
+To regenerate the performance plots in `docs/`, run:
+
+```bash
+python3 docs/generate_plots.py
+```
+
+The script runs the same trace across multiple cache configurations and saves the outputs as PNG files for direct embedding.
+
+## Performance Visuals
+
+The plots below are generated from the repository's reproducible benchmark flow and are stored under `docs/`.
+
+### Miss Rate Curve
+
+![Miss rate curve](docs/miss-rate-curve.png)
+
+### Associativity Impact
+
+![Associativity impact](docs/associativity-impact.png)
+
+## Repository Layout
+
+- `includes/cache.h` - cache interface and per-set LRU state
+- `src/cache.cpp` - constructor, bit math, access path, and statistics
+- `src/main.cpp` - CLI parsing and trace execution
+- `docs/` - reproducibility script and PNG plots
+- `traces/` - sample traces used for runs and demos
+
+## Output
+
+After processing a trace, the simulator reports:
 
 - total accesses
 - hits
 - misses
 - hit rate
 
-## Expected Behavior
-
-The cache uses strict LRU replacement per set:
-
-- On a hit, the accessed tag moves to the front of the set’s LRU list
-- On a miss, the new tag is inserted at the front
-- If the set is full, the least recently used tag at the back is evicted first
-
 ## Notes
 
 - Trace parsing ignores blank lines and malformed lines
-- The simulator assumes addresses fit within 32 bits
-- `main.cpp` currently uses fixed cache parameters; change those constants if you want to experiment with other configurations
+- The simulator assumes 32-bit addresses
+- The CLI validates that cache size, associativity, and block size are positive and divisible into a valid number of sets

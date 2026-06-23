@@ -2,14 +2,16 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <cstdlib>
+#include <stdexcept>
 
 #include "cache.h"
 
 int main(int argc, char* argv[]) {
     std::cout << "\n--- RISC-V Architectural Cache Simulator ---\n";
 
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <trace_file>\n";
+    if (argc < 2 || argc > 5) {
+        std::cerr << "Usage: " << argv[0] << " <trace_file> [cache_size_bytes] [associativity] [block_size]\n";
         return 1;
     }
 
@@ -17,6 +19,31 @@ int main(int argc, char* argv[]) {
     int cacheSize = 32768; // 32KB
     int associativity = 4; // 4-way
     int blockSize = 64;    // 64 Bytes
+
+    try {
+        if (argc >= 3) {
+            cacheSize = std::stoi(argv[2]);
+        }
+        if (argc >= 4) {
+            associativity = std::stoi(argv[3]);
+        }
+        if (argc >= 5) {
+            blockSize = std::stoi(argv[4]);
+        }
+    } catch (const std::exception&) {
+        std::cerr << "Invalid numeric cache parameter.\n";
+        return 1;
+    }
+
+    if (cacheSize <= 0 || associativity <= 0 || blockSize <= 0) {
+        std::cerr << "Cache size, associativity, and block size must be positive.\n";
+        return 1;
+    }
+
+    if (cacheSize % (associativity * blockSize) != 0) {
+        std::cerr << "Cache size must be divisible by associativity * block size.\n";
+        return 1;
+    }
 
     Cache l1_cache(cacheSize, associativity, blockSize);
 
