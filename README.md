@@ -1,6 +1,6 @@
 # Cache Simulator
 
-A C++17 L1 cache simulator focused on performance modeling, CLI reproducibility, and algorithmic clarity. The simulator supports parameterized cache size, associativity, and block size, and uses strict LRU replacement with $O(1)$ average-time lookups and updates.
+A C++ L1 cache simulator focused on performance modeling, CLI reproducibility, and algorithmic clarity. The simulator supports parameterized cache size, associativity, and block size, and uses strict LRU replacement with $O(1)$ average-time lookups and updates.
 
 ## Why This Repository Exists
 
