@@ -4,7 +4,7 @@ A C++ L1 cache simulator focused on performance modeling, CLI reproducibility, a
 
 ## Why This Repository Exists
 
-This project is designed to demonstrate hardware-aware modeling, cache behavior analysis, and data-structure discipline. The implementation is intentionally explicit about the core tradeoff that matters in interview settings: the cache policy is not a linear scan over an array. It is a front-moved LRU list backed by a hash map.
+This project is designed to demonstrate hardware-aware modeling, cache behavior analysis, and data-structure discipline. The implementation is intentionally explicit about the core tradeoff: the cache policy is not a linear scan over an array. It is a front-moved LRU list backed by a hash map.
 
 ## CLI
 
